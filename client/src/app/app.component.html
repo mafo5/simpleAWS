@@ -1,0 +1,17 @@
+<section>
+  <form (ngSubmit)="createEntry(entryForm)" #entryForm="ngForm">
+    <input type="text" class="form-control" id="text"
+           required
+           [(ngModel)]="model.text" name="text"
+           #name="ngModel">
+    <button type="submit" [disabled]="!entryForm.form.valid">Submit</button>
+  </form>
+</section>
+<section>
+  <h1>List <small><button (click)="refreshList()">refresh</button></small></h1>
+  <ul>
+    <ng-container *ngFor="let item of (list | async)">
+      <li key="item.id" (click)="editEntry(item)">{{item.text}} <button (click)="removeEntry(item)">remove</button></li>
+    </ng-container>
+  </ul>
+</section>
