@@ -1,11 +1,17 @@
 'use strict';
 
+const env = process.env;
+
 const { MongoClient } = require('mongodb');
-const url = 'mongodb://localhost:27017/';
-const dbName = 'simpleAWS';
+const host = env.DB_HOST || 'localhost';
+const port = env.DB_PORT || '27017';
+const url = `mongodb://${host}:${port}/`;
+const dbName = env.DB_NAME || 'simpleAWS';
 const tableName = 'entries';
 
 module.exports = function createDatabase() {
+
+    console.log(`USE MONGO: ${url}${dbName}/${tableName}`);
 
     createDb();
     createCollection();
