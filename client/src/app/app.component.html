@@ -1,5 +1,5 @@
 <section>
-  <form (ngSubmit)="createEntry(entryForm)" #entryForm="ngForm">
+  <form (ngSubmit)="createEntry()" #entryForm="ngForm">
     <input type="text" class="form-control" id="text"
            required
            [(ngModel)]="model.text" name="text"
