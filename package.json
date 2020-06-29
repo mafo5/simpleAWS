@@ -3,7 +3,13 @@
   "version": "1.0.0",
   "description": "The simple idea is to provide a step by step tutorial to get a simple application into Amazon Web Services (AWS).",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build:client": "cd client && npm ci && npm run build",
+    "docker:client": "docker build -t simple_aws_client ./client",
+    "docker:client:remove": "docker rm -f simple_aws_client",
+    "docker:client:run": "docker run -d --name simple_aws_client -v $(pwd)/client/dist/client:/usr/share/nginx/html -v $(pwd)/client/nginx:/etc/nginx/conf.d:ro -p 8100:80 nginx:alpine",
+    "docker:server": "docker build -t simple_aws_server ./server",
+    "docker:build": "(npm run docker:server) && (npm run build:client) && (npm run docker:client)",
+    "docker:run": "npm run docker:build && docker-compose -p simple_aws_cloud up"
   },
   "repository": {
     "type": "git",

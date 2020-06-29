@@ -1,0 +1,22 @@
+version: '3.1'
+services:
+  simple_aws_database:
+    image: mongo:latest
+    # ports:
+    #   - "27017:27017"
+  simple_aws_server:
+    image: simple_aws_server:latest
+    environment:
+      DB_HOST: simple_aws_database
+    # ports:
+    # - "8200:8200"
+    depends_on:
+    - simple_aws_database
+  simple_aws_client:
+    image: simple_aws_client:latest
+    environment:
+      API_HOST: simple_aws_server
+    ports:
+      - "4200:80"
+    depends_on:
+      - simple_aws_server
