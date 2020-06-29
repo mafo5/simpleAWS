@@ -25,6 +25,6 @@ jobs:
         CI: true
     - name: Test Client
       run: |
-        (npm run test:client)
+        (npm run test:client:ci)
       env:
         CI: true

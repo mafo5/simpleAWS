@@ -4,6 +4,7 @@
   "description": "The simple idea is to provide a step by step tutorial to get a simple application into Amazon Web Services (AWS).",
   "scripts": {
     "test:client": "cd client && npm ci && npm run lint && npm test",
+    "test:client:ci": "cd client && npm ci && npm run lint && npm run test:ci",
     "build:client": "cd client && npm ci && npm run build",
     "docker:client": "docker build -t simple_aws_client ./client",
     "docker:client:remove": "docker rm -f simple_aws_client",
