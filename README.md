@@ -1,5 +1,11 @@
 # Simple AWS Tutorial
 
+* [Step1 Simple App](#step1)
+* [Step2 Dockerify](#step2)
+* [Step3 Continuous Integration](#step3)
+* [Step4 Amazon Cloud](#step4)
+* [Step5 Amazon Features](#step5)
+
 The simple idea is to provide a step by step tutorial to get a simple application into Amazon Web Services (AWS).
 
 When I came across the need to deploy my applications somewhere I found myself overwhelmed with the options AWS provides. Therefore, I looked around for simple solutions and yet was not successful.
@@ -12,7 +18,8 @@ The Client is built in the latest vanilla Angular. The Server uses the ExpressJS
 
 You can check out each step to see what will cover its goals or you can check out the master to see the latest result. Every step will be built on top of each other. Some things might slightly change between steps. The goal here is to no remove any features. So e.g. the app will run locally at first and should stay runnable locally for the rest of the steps.
 
-## Step1 Simple App (v1.x.x)
+## Step1 Simple App ([v1.x.x](https://github.com/mafo5/simpleAWS/tree/v1.0.2))
+<a name="step1"></a>
 
 **Goal: Create simple application running locally**
 
@@ -42,7 +49,8 @@ To connect the server with the database I used the official library. I removed t
 
 Running everything now I can manipulate data and store them into the mongo as documents. A simple CRUD application. All things should have a good amount of test coverage. You can extend the features in any dimension. Most likely you will have a much more complex application.
 
-## Step2 Dockerify (v2.x.x)
+## Step2 Dockerify ([v2.x.x](https://github.com/mafo5/simpleAWS/tree/v2.0.1))
+<a name="step2"></a>
  
 **Goal: Put all into docker container to be started with one command**
 
@@ -56,19 +64,37 @@ To speed up the process I created a `.dockerignore` next to the created `Dockerf
 
 After all, I now can start everything with just one command. The compose starts all three containers. I tested it manually.
 
-## Step3 Continuous Integration (v3.x.x)
+## Step3 Continuous Integration ([v3.x.x](https://github.com/mafo5/simpleAWS/tree/v3.0.0))
+<a name="step3"></a>
 
 **Goal: run all the development scripts to ensure stability and provide artefacts for the cloud**
 
-*COMING SOON*
+Note: Because I have all my codebase in GitHub. I will use GitHub to store the source code and AWS only to provide the deployment infrastructure. So from now on, I assume you got a GitHub account and an AWS account. Additionally, I used `eu-central-1` as my region. This will have consequences in pricing. Please see the regions for more information. 
 
-## Step4 Amazon Cloud (v4.x.x)
+First of all, I created a new repository for the server container and the client container at [ECR](https://eu-central-1.console.aws.amazon.com/ecr/repositories?region=eu-central-1). This will create a docker registry for a single image. So you can push images with the same name to the same URL but should use different URLs for different named containers. That's why I created two.
+
+For security purpose, I created a new group and user for my GitHub actions in [AWS User Management](https://console.aws.amazon.com/iam/home?#/users). As the policy for the user, I selected `AmazonEC2ContainerRegistryPowerUser`. ATTENTION: The id and key on the success page needed to be noted, because you will not see them again. Both are put into the secret panel in GitHub Repository Settings Page as `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
+
+To ensure the stability of the code I created a GitHub workflow action to run the test command on every push. This script failed at first because the client Angular application uses Chrome as the default browser. This browser is not accessible in the GitHub environment. Therefore, I created an additional script for the CI in the `karma.conf` using the `ChromeHeadless` setting.
+
+To access the created docker container in AWS later, I used the [official AWS publish workflow action](https://github.com/actions/starter-workflows/blob/master/ci/aws.yml). I extended it with the usage of [package version action](https://github.com/marketplace/actions/package-version) to extract the version from the `package.json` to not use the SHA value of the commit as a tag. Also, I needed to copy the built part to cover both images I created.
+
+After the next commit, both actions are executed and the images are now pushed into the Amazon Repository.
+
+> **CURRENT ISSUES:**
+>
+> - *[Tagged Version is 0.0.0](https://github.com/nyaascii/package-version/issues/3)*
+>
+
+## Step4 Amazon Cloud ([v4.x.x](https://github.com/mafo5/simpleAWS/tree/v4.0.0))
+<a name="step4"></a>
 
 **Goal: put all into an Amazon provided docker instance to have it run all the time**
 
 *COMING SOON*
 
-## Step5 Amazon Features (v5.x.x)
+## Step5 Amazon Features ([v5.x.x](https://github.com/mafo5/simpleAWS/tree/v5.0.0))
+<a name="step5"></a>
 
 **Goal: replace MongoDB with DynamoDB to better usage of Amazon services**
 
