@@ -1,6 +1,6 @@
 {
   "name": "simpleaws",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "The simple idea is to provide a step by step tutorial to get a simple application into Amazon Web Services (AWS).",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
