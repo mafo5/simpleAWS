@@ -16,6 +16,8 @@ jobs:
   
     - name: package-version
       uses: nyaascii/package-version@1.0.2-pre
+      with:
+        path: 'package.json'
 
     - name: Latest Node.js
       uses: actions/setup-node@v1.4.2
