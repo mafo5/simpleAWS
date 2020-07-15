@@ -1,6 +1,6 @@
 {
   "name": "simpleaws",
-  "version": "3.0.1",
+  "version": "3.0.2",
   "description": "The simple idea is to provide a step by step tutorial to get a simple application into Amazon Web Services (AWS).",
   "scripts": {
     "test:client": "cd client && npm ci && npm run lint && npm test",
