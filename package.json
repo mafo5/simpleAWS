@@ -8,7 +8,7 @@
     "build:client": "cd client && npm ci && npm run build",
     "docker:client": "docker build -t simple_aws_client ./client",
     "docker:client:remove": "docker rm -f simple_aws_client",
-    "docker:client:run": "docker run -d --name simple_aws_client -v $(pwd)/client/dist/client:/usr/share/nginx/html -v $(pwd)/client/nginx:/etc/nginx/conf.d:ro -p 8100:80 nginx:alpine",
+    "docker:client:run": "docker run -d --name simple_aws_client -v $(pwd)/client/dist/client:/usr/share/nginx/html -v $(pwd)/client/nginx:/etc/nginx/conf.d:ro -p 8100:80 -e 'API_HOST=simple_aws_server' nginx:alpine",
     "test:server": "cd server && npm ci && npm test",
     "docker:server": "docker build -t simple_aws_server ./server",
     "test": "(npm run test:server) && (npm run test:client)",
