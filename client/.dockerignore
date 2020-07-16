@@ -1,3 +1,4 @@
 **
 !dist
 !nginx
+!nginx_environment_variables.sh

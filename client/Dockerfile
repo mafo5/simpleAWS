@@ -6,4 +6,4 @@ RUN rm /etc/nginx/conf.d/default.conf
 COPY dist/client /usr/share/nginx/html
 COPY nginx /etc/nginx/conf.d
 
-EXPOSE 80
+COPY nginx_environment_variables.sh /docker-entrypoint.d
