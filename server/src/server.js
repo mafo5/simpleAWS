@@ -8,12 +8,15 @@ module.exports = function createServer() {
     app.use(express.urlencoded({ extended: true }));
 
     const entryListCache = createDatabase();
+    app.get('/health', restHandler(() => {
+        return Promise.resolve('');
+    }))
     app.get('/entries', restHandler(() => {
-        console.log('GET /entries', { properties: null, content: null, entryListCache: entryListCache.toString() });
+        log('GET /entries', { properties: null, content: null, entryListCache: entryListCache.toString() });
         return entryListCache.getList();
     }));
     app.post('/entries', restHandler((properties, content) => {
-        console.log('POST /entries', { properties, content, entryListCache: entryListCache.toString() });
+        log('POST /entries', { properties, content, entryListCache: entryListCache.toString() });
         if (!content) {
             throw new Error('EMPTY');
         }
@@ -22,20 +25,20 @@ module.exports = function createServer() {
         });
     }));
     app.get('/entries/:id', restHandler((properties) => {
-        console.log('GET /entries/:id', { properties, content: null, entryListCache: entryListCache.toString() });
+        log('GET /entries/:id', { properties, content: null, entryListCache: entryListCache.toString() });
         return entryListCache.find((entry) => {
             return entry && properties && entry.id === properties.id;
         });
     }));
     app.put('/entries/:id', restHandler((properties, content) => {
-        console.log('PUT /entries/:id', { properties, content, entryListCache: entryListCache.toString() });
+        log('PUT /entries/:id', { properties, content, entryListCache: entryListCache.toString() });
         if (!content) {
             throw new Error('EMPTY');
         }
         return entryListCache.findIndex((entry) => {
             return entry && properties && entry.id === properties.id;
         }).then((indexEntry) => {
-            console.log('LIST INDEX', indexEntry);
+            log('LIST INDEX', indexEntry);
             if (indexEntry === -1) {
                 return undefined;
             }
@@ -45,7 +48,7 @@ module.exports = function createServer() {
         });
     }));
     app.delete('/entries/:id', restHandler((properties, content) => {
-        console.log('DELETE /entries/:id', { properties, content, entryListCache: entryListCache.toString() });
+        log('DELETE /entries/:id', { properties, content, entryListCache: entryListCache.toString() });
         return entryListCache.findIndex((entry) => {
             return entry && properties && entry.id === properties.id;
         }).then((indexEntry) => {
@@ -62,10 +65,10 @@ module.exports = function createServer() {
 
 function restHandler(handler) {
     return (req, res) => {
-        console.log('REST HANDLER', { url: req && req.url, method: req && req.method });
+        log('REST HANDLER', { url: req && req.url, method: req && req.method }, req);
         const params = req && req.params;
         let content = req && req.body;
-        console.log('REST CONTENT', { params, content });
+        log('REST CONTENT', { params, content }, req);
         try {
             if (content && typeof content === 'string') {
                 content = JSON.parse(content);
@@ -75,20 +78,20 @@ function restHandler(handler) {
             res.status(400);
             return Promise.resolve();
         }
-        console.log('CALL HANDLER');
+        log('CALL HANDLER', undefined, req);
         try {
             const resultPromise = handler(params, content);
             return resultPromise.then((result) => {
-                console.log('REST RESULT', result);
+                log('REST RESULT', result, req);
                 if (res) {
                     if (result !== null && result !== undefined) {
-                        console.log('REST STATUS', 200);
+                        log('REST STATUS', 200, req);
                         res.status(200);
                     } else if (result === null) {
-                        console.log('REST STATUS', 201);
+                        log('REST STATUS', 201, req);
                         res.status(201);
                     } else {
-                        console.log('REST STATUS', 404);
+                        log('REST STATUS', 404, req);
                         res.status(404);
                     }
                     res.send(result);
@@ -105,4 +108,11 @@ function restHandler(handler) {
             return Promise.resolve();
         }
     };
+}
+
+function log(message, object, req) {
+    if (req && req.url === '/health') {
+        return;
+    }
+    console.log(message, object);
 }
