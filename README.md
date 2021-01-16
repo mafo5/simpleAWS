@@ -5,6 +5,7 @@
 * [Step3 Continuous Integration](#step3)
 * [Step4 Amazon Cloud](#step4)
 * [Step5 Amazon Features](#step5)
+* [Step6 Amazon Costs](#step6)
 
 The simple idea is to provide a step by step tutorial to get a simple application into Amazon Web Services (AWS).
 
@@ -81,21 +82,49 @@ To access the created docker container in AWS later, I used the [official AWS pu
 
 After the next commit, both actions are executed and the images are now pushed into the Amazon Repository.
 
-> **CURRENT ISSUES:**
->
-> - *[Tagged Version is 0.0.0](https://github.com/nyaascii/package-version/issues/3)*
->
-
 ## Step4 Amazon Cloud ([v4.x.x](https://github.com/mafo5/simpleAWS/tree/v4.0.0))
 <a name="step4"></a>
 
-**Goal: put all into an Amazon provided docker instance to have it run all the time**
+**Goal: put all into an Amazon provided docker instance to have it run all the time only via website**
 
-*COMING SOON*
+This part dives deep into AWS. There is a [very good tutorial](https://aws.amazon.com/getting-started/hands-on/break-monolith-app-microservices-ecs-docker-ec2/) for AWS in general. I can highly recommend using this tutorial to gain all the needed knowledge. The problem with this tutorial is that it uses a "monolith" as start and is a bit complicated to extend to a usual client-server-database architecture and also not addresses a database. Nevertheless, I will use this AWS tutorial as a basis. Will you face problems with my description look into the AWS tutorial to find the current AWS provided solution. This step here is more or less [the Module2 of the AWS Tutorial](https://aws.amazon.com/getting-started/hands-on/break-monolith-app-microservices-ecs-docker-ec2/module-two/)
+
+Attention: The pricing of AWS is quite complicated. Some features have a free forever contingent and some have a first 12 months free contingent. Even though of free contingent some part may cost anyway. So I can only recommend to always check your [last 7 days in the cost monitor](https://console.aws.amazon.com/cost-management/home?#/custom?groupBy=Service&excludeDiscounts=false&timeRangeOption=Last7Days&granularity=Daily).
+
+First of all, we create a key pair to be able to access the to be created computer instance. The creation is not needed but enables you to debug a bit better if you face any problems. It is impossible to add a key pair after creating an instance. You only need to add a name for the key pair and download it for later usage on the [key page of the EC2 service page]((https://eu-central-1.console.aws.amazon.com/ec2/v2/home?region=eu-central-1#KeyPairs:)).
+
+With this created key we now create a cluster. On the [ECS cluster page](https://eu-central-1.console.aws.amazon.com/ecs/home?region=eu-central-1#/clusters) by clicking the create cluster button, you can enter all needed information for the cluster. I used the "EC2 Linux + Networking" template, picked a name, selected the t2.micro instance because the first 12 months of this is free, selected the created key pair, selected to create a new VPC, changed the Security group inbound rules to "0-65535" to enable all ports to be accessible, selected to create a new IAM role and selected to enabled CloudWatch Container Insights. After creating, you should note the VPC number. Later you will need to select the correct VPC in other wizards to see all your created instances and services etc. This wizard now has created a VPC with an EC2 instance in it, two subnets, two routing tables, an internet gateway, two security groups, an auto scale and starting config, a volume and some security roles. If you try to revert all your doings, keep in mind track the deletion of everything created by the wizard. In some cases, the deletion wizard doesn't fully remove all of it.
+
+After the creation, we have to extend the service rules to enable the correct connection of the MongoDB. Therefore got to the [ServiceRule page](https://eu-central-1.console.aws.amazon.com/ec2/v2/home?region=eu-central-1#SecurityGroups:) and select the rule with the description "ECS Allowed Ports". In the details below on the tab for incoming traffic you can edit the rule and select all incoming sources which adds "::/0" as source.
+
+Now is the time to make an infrastructural decision: Do you want to scale the set of services together or independent of each other?
+
+The easy (and mostly described) is the bundled service answer. Here you just need the create one task for all three containers and one service for the task. Each container in the task can be linked via the "link" property in the "Network Settings" section. The property is a comma-separated string. (Attention: array able properties just need to be a comma-separated string. Please take a look at the JSON view of the task to confirm the correct usage.) With the linkage, all containers can find each other and the task can be started as a service in the cluster. After all, you need a load balancer to access the application for the internet. For the explicit steps read the next part of the complex answer because the basic creation is the same. Just add all containers to one task.
+
+We will dive deeper into the more complex answer of running each container as a single task to scale each one independently. 
+
+First of all, we need a discovery system for each container to find the others because the UI needs to know the IP of the API and the API need to know the IP of the database. There are [many different ways](https://github.com/nathanpeck/awesome-ecs#implementation-guides) to achieve the same goal. I decided to use the Load Balancer for this purpose because it's the more convenient way from my architectural view. (attention: Each LB will cost around 25$ per month just to exist and an additional fee for each transferred byte. This might get cost-intensive. I will look at the costs [later](#step6).) Each LB will create a target while creation. But it will not delete the target when it will be deleted. So bare in mind to delete the targets you don't need.
+
+Because the MongoDB will be accessed via the mongo protocol which is not HTTP the database needs a TCP Load Balancer. So you can create one Network Load Balancer for the database and an Application Load Balancer for the UI and API, or you create separate Application Load Balancer for the UI and API, or you create one Classic Load Balancer for all parts together, or one Classic Load Balancer for API and database and one Application Load Balancer for the UI. Because I like to reduce public access and don't want to use legacy usage I picked the three Load Balancer solution. For the database and API LB I selected the internal usage. For the UI the LB needs to be internet accessible. All LBs gets a unique name and it's appropriated port in the listeners, all subnets selected in the VPC created for the cluster, all existing security groups selected, a unique new target name and the VPC instance registered. The API gets the "/health" path and the UI keeps the default path as a health check for the target. On the [list view for the Load Balancers](https://eu-central-1.console.aws.amazon.com/ec2/v2/home?region=eu-central-1#LoadBalancers:), you need to note the DNS name for the database and the service as the name for the environment properties of the API and the UI container.
+
+Now we will create a task for each container in the [task overview](https://eu-central-1.console.aws.amazon.com/ecs/home?region=eu-central-1#/taskDefinitions). Each task gets a unique name. You get the image URL from the [registry page](https://eu-central-1.console.aws.amazon.com/ecr/repositories?region=eu-central-1#). Just add the latest tag name (e.g. version number) to the URI. Each container needs its dedicated port map and max memory set. For the MongoDB, I picked 256 for memory and 27017 as the port. For the API, I picked 128 for memory and 8200 as the port. And finally, for the UI I picked 128 again and 80 as the port. Because of the micro instance, the maximum memory for everything can't exceed 512MB. That's why I picked 256 once and 128 twice. Regarding the [documentation of MongoDB](https://learn.fotoware.com/On-Premises/FotoWeb/05_Configuring_sites/Setting_the_MongoDB_instance_that_FotoWeb_uses/MongoDB_disk_and_memory_requirements), this will enable ca 2560 entries in the database. You can tweak the memory settings for your desire.
+The API needs the Load Balancer DNS name of the database as "DB_HOST" environment variable and the UI needs the Load Balancer DNS name of the API as "API_HOST" environment variable.
+(Changing Task configurations result in a new revision is a bit painful. Usually, I create 3 revisions because I always forget something.)
+
+With all three tasks, we now can create a service for each task. Each service is an EC2 one, with a unique name, with 1 as the number of tasks and its appropriated load balancer. For each load balancer, you need to add the port mapping appropriately. Select the already created AWSServiceRoleForECS as Service IAM role as well as the existing port listener and the existing target in the port map.
+
+After all three services are running you can test the app via the DNS name of the UI Load Balancer. When you can enter entries and put them into the list, everything went well.
 
 ## Step5 Amazon Features ([v5.x.x](https://github.com/mafo5/simpleAWS/tree/v5.0.0))
 <a name="step5"></a>
 
 **Goal: replace MongoDB with DynamoDB to better usage of Amazon services**
+
+*COMING SOON*
+
+## Step6 Amazon Costs ([v6.x.x](https://github.com/mafo5/simpleAWS/tree/v6.0.0))
+<a name="step6"></a>
+
+**Goal: get a cost overview for a usual website in this setup**
 
 *COMING SOON*
